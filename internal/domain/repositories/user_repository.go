@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"githib.com/MuchUp/backend/internal/domain/entity"
+	"github.com/MuchUp/backend/internal/domain/entity"
 )
 
 type UserRepository interface {

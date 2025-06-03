@@ -18,8 +18,12 @@ type User struct {
 	ID string
 	Email *string
 	PhoneNumber *string
-	UserName string
-	ParsonalityProfile map[string]interface{}
+	NickName string
+	PasswordHash string
+
+	PersonalityProfile map[string]interface{}
+	AvatarURL *string
+
 	UsagePurpose string
 	IsActive bool
 	EmailVerified bool
@@ -33,13 +37,13 @@ type User struct {
 	DeletedAt gorm.DeletedAt
 }
 
-func NewUser(userid,name,authMethod PrimaryAuthMethod,email,phone string) (*User,error) {
+func NewUser(userid,name string,authMethod PrimaryAuthMethod,email,phone string) (*User,error) {
 	if userid == "" || name == "" || authMethod == "" {
 		return nil,errors.New("user_id,name,authMethod is required")
 	}
 	user := &User {
 		ID:userid,
-		UserName:name,
+		NickName:name,
 		AuthMethod:authMethod,
 		CreatedAt:time.Now(),
 		UpdatedAt:time.Now(),
@@ -53,7 +57,7 @@ func NewUser(userid,name,authMethod PrimaryAuthMethod,email,phone string) (*User
 	}
 	if authMethod == AuthMethodPhone {
 		if phone == "" {
-			return nil ,erros.New("phone is required")
+			return nil ,errors.New("phone is required")
 		}
 		user.PhoneNumber = &phone
 		user.PhoneVerified = true

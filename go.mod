@@ -1,4 +1,4 @@
-module githib.com/MuchUp/backend
+module github.com/MuchUp/backend
 
 go 1.23.2
 

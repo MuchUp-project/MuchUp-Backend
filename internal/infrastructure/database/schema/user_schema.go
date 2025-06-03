@@ -6,7 +6,8 @@ import (
 	"gorm.io/gorm"
 	"errors"
 )
-// internal/infrastructure/database/schema/user_schema.go
+
+
 type UserSchema struct {
     ID                   string         `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
     
@@ -24,11 +25,11 @@ type UserSchema struct {
     VerificationCodeExpiry   *time.Time
     
 
-	Nickname             string         `gorm:"size:50;not null"`
+	NickName             string         `gorm:"size:50;not null"`
     AvatarURL            *string        `gorm:"size:500"`
     
     
-    PersonalityProfile   string         `gorm:"type:jsonb"`
+    PersonalityProfile   map[string]interface{}         `gorm:"type:jsonb"`
     UsagePurpose         string         `gorm:"type:text"`
     
     IsActive             bool           `gorm:"default:true"`
