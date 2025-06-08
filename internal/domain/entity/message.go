@@ -1,32 +1,54 @@
 package entity
 
-
 import (
-	"time"
 	"errors"
-	"github.com/google/uuid"
+	"time"
+
+	"MuchUp/backend/utils"
 )
 
 type Message struct {
-	ID string `json:"id"`
-	UserID string `json:"user_id"`
-	Text string `json:"text"`
+	MessageID string  `json:"message_id"`
+	SenderID  string  `json:"user_id"`
+	GroupID   string  `json:"group_id"`
+	Text      *string `json:"text"`
+	Image     *string `json:"image"`
+	Video     *string `json:"video"`
+	Sticker   *string `json:"sticker"`
+
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	DeletedAt time.Time `json:"deleted_at"`
 }
 
-func NewMessage(userid,text string) (*Message,error) {
+func NewMessage(userid, groupid, text string) (*Message, error) {
 	if len(text) == 0 {
-		return nil,errors.New("text is required")
+		return nil, errors.New("text is required")
 
 	}
 	if len(text) > 1000 {
 		return nil, errors.New("text is too long")
 	}
 	message := &Message{
-		ID : uuid.New().String(),
-		UserID : userid,
-		Text : text,
-		CreatedAt : time.Now(),
+		MessageID: utils.GenerateUUID(),
+		SenderID:  userid,
+		GroupID:   groupid,
+		Text:      &text,
+
+		CreatedAt: time.Now(),
 	}
-	return message , nil
+	return message, nil
+}
+
+func (m *Message) CanSendMessage(senderID string) bool {
+	if m.SenderID == senderID {
+		if m.Text == nil && m.Image == nil && m.Video == nil && m.Sticker == nil {
+			return false
+		}
+		if m.Text != nil || len(*m.Text) > 1000 {
+			return false
+		}
+		return true
+	}
+	return false
 }

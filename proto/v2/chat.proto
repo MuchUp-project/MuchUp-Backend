@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package v2;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "MuchUp/backend/proto/gen/go/v2;v2";
+
+// User Service
+service UserService {
+    rpc CreateUser(CreateUserRequest) returns (User) {}
+    rpc GetUser(GetUserRequest) returns (User) {}
+}
+
+// Message Service
+service MessageService {
+    rpc CreateMessage(CreateMessageRequest) returns (Message) {}
+    rpc GetMessagesByGroup(GetMessagesByGroupRequest) returns (stream Message) {}
+}
+
+// User
+message User {
+    string id = 1;
+    string nick_name = 2;
+    string email = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp updated_at = 5;
+}
+
+// Message
+message Message {
+    string message_id = 1;
+    string sender_id = 2;
+    string group_id = 3;
+    string text = 4;
+    google.protobuf.Timestamp created_at = 5;
+}
+
+// Requests
+message CreateUserRequest {
+    string nick_name = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message GetUserRequest {
+    string id = 1;
+}
+
+message CreateMessageRequest {
+    string sender_id = 1;
+    string group_id = 2;
+    string text = 3;
+}
+
+message GetMessagesByGroupRequest {
+    string group_id = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+} 

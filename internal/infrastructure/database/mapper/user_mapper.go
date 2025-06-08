@@ -1,35 +1,55 @@
- package mapper
+package mapper
 
- import (
-	"github.com/MuchUp/backend/internal/domain/entity"
-	"github.com/MuchUp/backend/internal/infrastructure/database/schema"
- )
+import (
+	"encoding/json"
+	"log"
 
- func ToUserSchema(user *entity.User)  *schema.UserSchema {
-		userSchema :=  &schema.UserSchema{
-			ID: user.ID,
-			NickName: user.NickName,
-			PasswordHash: user.PasswordHash,
-			EmailVerified: user.EmailVerified,
-			UsagePurpose: user.UsagePurpose,
-			IsActive: user.IsActive,
-			AvatarURL: user.AvatarURL,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			DeletedAt: user.DeletedAt,
-			PersonalityProfile: user.PersonalityProfile,
-			PrimaryAuthMethod: string(user.AuthMethod),
-		}	
-		switch user.AuthMethod {
-			case entity.AuthMethodEmail :{
-				userSchema.Email = user.Email
-				userSchema.EmailVerified = true
-			}
-			case entity.AuthMethodPhone : {
-				userSchema.PhoneNumber= user.PhoneNumber
-				userSchema.PhoneVerified = true
-			}
+	"MuchUp/backend/internal/domain/entity"
+	"MuchUp/backend/internal/infrastructure/database/schema"
+)
+
+func ToUserSchema(user *entity.User) *schema.UserSchema {
+	var profileJSON json.RawMessage
+	if user.PersonalityProfile != nil {
+		profileData, err := json.Marshal(user.PersonalityProfile)
+		if err != nil {
+			log.Printf("Error marshalling user profile: %v", err)
+			// Decide on fallback. Empty JSON object is a safe default.
+			profileJSON = json.RawMessage("{}")
+		} else {
+			profileJSON = profileData
 		}
-		return userSchema
 	}
-	
+
+	return &schema.UserSchema{
+		ID:                 user.ID,
+		NickName:           user.NickName,
+		Email:              user.Email,
+		PasswordHash:       user.PasswordHash,
+		UsagePurpose:       user.UsagePurpose,
+		PersonalityProfile: profileJSON,
+		CreatedAt:          user.CreatedAt,
+		UpdatedAt:          user.UpdatedAt,
+	}
+}
+
+func ToUserEntity(userSchema *schema.UserSchema) *entity.User {
+	var profile map[string]interface{}
+	if userSchema.PersonalityProfile != nil {
+		// In a mapper, we might prefer to log the error rather than return it
+		// to simplify the function signature. For now, we ignore the error
+		// and the profile will be nil.
+		_ = json.Unmarshal(userSchema.PersonalityProfile, &profile)
+	}
+
+	return &entity.User{
+		ID:                 userSchema.ID,
+		NickName:           userSchema.NickName,
+		Email:              userSchema.Email,
+		PasswordHash:       userSchema.PasswordHash,
+		UsagePurpose:       userSchema.UsagePurpose,
+		PersonalityProfile: profile,
+		CreatedAt:          userSchema.CreatedAt,
+		UpdatedAt:          userSchema.UpdatedAt,
+	}
+}

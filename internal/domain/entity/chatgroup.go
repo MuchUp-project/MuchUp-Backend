@@ -1,60 +1,52 @@
 package entity
 
 import (
-	"errors"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+// ChatGroup represents a chat group entity.
 type ChatGroup struct {
-	ID         string    `json:"id"`
-	Members    []User    `json:"users"`
-	Messages   []Message `json:"messages"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Members    []User   `json:"members"`
+	MessageIDs []string `json:"messages"`
 	MaxMembers int
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 	DeletedAt  time.Time `json:"deleted_at"`
 }
 
-func NewChatRoom(users []User) (*ChatGroup, error) {
-	maxMember := 6
-	if len(users) > maxMember {
-		return nil, errors.New("max 6 users are allowed")
-	}
+func NewChatGroup(defaultName string, maxMember int, initialUser User) *ChatGroup {
 	return &ChatGroup{
 		ID:         uuid.New().String(),
-		Members:    users,
-		Messages:   []Message{},
+		Name:       defaultName,
+		Members:    []User{initialUser},
 		MaxMembers: maxMember,
 		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-	}, nil
-
+	}
 }
 
-func (c *ChatGroup)IsMember(user User) bool {
-	for _,member := range c.Members {
-		if member.ID == user.ID {
+func (c *ChatGroup) IsMember(userID string) bool {
+	for _, member := range c.Members {
+		if userID == member.ID {
 			return true
 		}
-	
 	}
 	return false
 }
 
-func (c *ChatGroup) AddMessageLog(user User, message Message) error {
-	if !c.IsMember(user) {
-		return errors.New("this user is not a member of this chatroom")
+func (c *ChatGroup) CanAddMemnber() bool {
+	if len(c.Members) >= c.MaxMembers {
+		return false
 	}
-	if len(c.Messages) >= 1000 {
-		return errors.New("message limit reached")
-	}
-
-	log.Println("recent message: %s", message.Text)
-	c.Messages = append(c.Messages, message)
-	c.UpdatedAt = time.Now()
-	return nil
+	return true
 }
 
+func (c *ChatGroup) CanDeleteGroup() bool {
+	if len(c.Members) > 1 {
+		return false
+	}
+	return true
+}

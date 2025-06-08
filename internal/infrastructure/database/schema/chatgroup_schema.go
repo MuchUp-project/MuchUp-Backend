@@ -1,20 +1,20 @@
-package schema 
-
+package schema
 
 import (
 	"time"
+
 	"gorm.io/gorm"
 )
 
-
-type GroupSchema struct {
-	Group string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-
+type ChatGroupSchema struct {
+	ID        string       `gorm:"type:uuid;primaryKey"`
+	Name      string       `gorm:"type:varchar(100);not null"`
+	Users     []UserSchema `gorm:"many2many:user_chat_groups;"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-
-	Messages []MessageSchema `gorm:"foreignKey:GroupID"`
-	Memberships []GroupMembershipSchema `gorm:"foreignKey:GroupID"`
 }
 
+func (ChatGroupSchema) TableName() string {
+	return "chat_groups"
+}

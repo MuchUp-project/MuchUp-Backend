@@ -1,11 +1,11 @@
-package service
+package user
 
 import (
 	"time"
 	"errors"
-	"github.com/MuchUp/backend/internal/domain/entity"
-	"github.com/MuchUp/backend/internal/domain/repositories"
-	"github.com/MuchUp/backend/internal/domain/usecase"
+	"MuchUp/backend/internal/domain/entity"
+	"MuchUp/backend/internal/domain/repositories"
+	"MuchUp/backend/internal/domain/usecase"
 )
 
 type userAuthService struct {
