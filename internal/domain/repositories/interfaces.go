@@ -1,8 +1,5 @@
 package repositories
-
 import "MuchUp/backend/internal/domain/entity"
-
-// UserRepository -.
 type UserRepository interface {
 	CreateUser(user *entity.User) error
 	GetUserByID(id string) (*entity.User, error)
@@ -12,7 +9,6 @@ type UserRepository interface {
 	GetUsersByGroup(groupID string) ([]*entity.User, error)
 	GetUserByEmail(email string) (*entity.User, error)
 }
-
 type MessageRepository interface {
 	CreateMessage(message *entity.Message) error
 	GetMessageByID(id string) (*entity.Message, error)
@@ -21,7 +17,6 @@ type MessageRepository interface {
 	DeleteMessage(id string) error
 	GetMessagesByGroup(groupID string, limit, offset int) ([]*entity.Message, error)
 }
-
 type ChatGroupRepository interface {
 	CreateGroup(group *entity.ChatGroup) (*entity.ChatGroup, error)
 	GetGroupByID(id string) (*entity.ChatGroup, error)

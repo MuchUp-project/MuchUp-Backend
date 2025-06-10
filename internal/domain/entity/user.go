@@ -1,42 +1,32 @@
 package entity 
-
-
 import (
 	"time"
 	"errors"
 	"gorm.io/gorm"
 )
-
 type PrimaryAuthMethod string
-
 const (
 	AuthMethodEmail PrimaryAuthMethod = "email"
 	AuthMethodPhone PrimaryAuthMethod = "phone"
 )
-
 type User struct {
 	ID string
 	Email *string
 	PhoneNumber *string
 	NickName string
 	PasswordHash string
-
 	PersonalityProfile map[string]interface{}
 	AvatarURL *string
-
 	UsagePurpose string
 	IsActive bool
 	EmailVerified bool
 	PhoneVerified bool
 	AuthMethod PrimaryAuthMethod 
 	IsBlockedUsers map[string]bool
-
-
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
 }
-
 func NewUser(userid,name string,authMethod PrimaryAuthMethod,email,phone string) (*User,error) {
 	if userid == "" || name == "" || authMethod == "" {
 		return nil,errors.New("user_id,name,authMethod is required")
@@ -64,17 +54,14 @@ func NewUser(userid,name string,authMethod PrimaryAuthMethod,email,phone string)
 	}
 	return user,nil
 }
-
 func (u *User) CanSendMessage(targetUserID string) bool {
     isBlockedUsers := u.IsBlockedUsers[targetUserID]
 	return !(u.IsActive && isBlockedUsers)
 }
-	
 func (u *User) BlockUser(targetUserID string) error {
 	if !(u.ID == targetUserID) {
 		return errors.New("cannot block yourself")
 	}
-
 	if u.IsBlockedUsers == nil {
 		u.IsBlockedUsers = make(map[string]bool)
 		return nil
@@ -82,7 +69,6 @@ func (u *User) BlockUser(targetUserID string) error {
 	u.IsBlockedUsers[targetUserID] = true
 	return nil
 }
-
 func (u *User) UnblockUser(targetUserID string) error {
 	if !(u.ID == targetUserID) {
 		return errors.New("cannot unblock yourself")

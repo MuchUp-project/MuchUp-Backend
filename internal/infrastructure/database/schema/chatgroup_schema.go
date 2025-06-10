@@ -1,11 +1,8 @@
 package schema
-
 import (
 	"time"
-
 	"gorm.io/gorm"
 )
-
 type ChatGroupSchema struct {
 	ID        string       `gorm:"type:uuid;primaryKey"`
 	Name      string       `gorm:"type:varchar(100);not null"`
@@ -14,7 +11,6 @@ type ChatGroupSchema struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
-
 func (ChatGroupSchema) TableName() string {
 	return "chat_groups"
 }

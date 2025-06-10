@@ -1,10 +1,8 @@
 package mapper
-
 import (
 	"MuchUp/backend/internal/domain/entity"
 	"MuchUp/backend/internal/infrastructure/database/schema"
 )
-
 func ToMessageSchema(message *entity.Message) *schema.MessageSchema {
 	return &schema.MessageSchema{
 		ID:       message.MessageID,
@@ -13,7 +11,6 @@ func ToMessageSchema(message *entity.Message) *schema.MessageSchema {
 		GroupID:  message.GroupID,
 	}
 }
-
 func ToMessageEntity(messageSchema *schema.MessageSchema) *entity.Message {
 	return &entity.Message{
 		MessageID: messageSchema.ID,

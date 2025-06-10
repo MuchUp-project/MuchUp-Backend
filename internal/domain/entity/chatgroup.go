@@ -1,12 +1,8 @@
 package entity
-
 import (
 	"time"
-
 	"github.com/google/uuid"
 )
-
-// ChatGroup represents a chat group entity.
 type ChatGroup struct {
 	ID         string   `json:"id"`
 	Name       string   `json:"name"`
@@ -17,7 +13,6 @@ type ChatGroup struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 	DeletedAt  time.Time `json:"deleted_at"`
 }
-
 func NewChatGroup(defaultName string, maxMember int, initialUser User) *ChatGroup {
 	return &ChatGroup{
 		ID:         uuid.New().String(),
@@ -27,7 +22,6 @@ func NewChatGroup(defaultName string, maxMember int, initialUser User) *ChatGrou
 		CreatedAt:  time.Now(),
 	}
 }
-
 func (c *ChatGroup) IsMember(userID string) bool {
 	for _, member := range c.Members {
 		if userID == member.ID {
@@ -36,14 +30,12 @@ func (c *ChatGroup) IsMember(userID string) bool {
 	}
 	return false
 }
-
 func (c *ChatGroup) CanAddMemnber() bool {
 	if len(c.Members) >= c.MaxMembers {
 		return false
 	}
 	return true
 }
-
 func (c *ChatGroup) CanDeleteGroup() bool {
 	if len(c.Members) > 1 {
 		return false

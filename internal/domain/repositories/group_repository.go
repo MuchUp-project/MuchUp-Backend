@@ -1,9 +1,7 @@
 package repositories 
-
 import (
 	"MuchUp/backend/internal/domain/entity"
 )
-
 type GroupRepository interface {
 	CreateGroup(group *entity.ChatGroup) error
 	DeleteGroup(groupID string) error

@@ -1,12 +1,8 @@
 package schema
-
 import (
 	"time"
-
 	"gorm.io/gorm"
 )
-
-// MessageSchema はデータベースのmessagesテーブルのスキーマを表します
 type MessageSchema struct {
 	ID        string `gorm:"type:uuid;primaryKey"`
 	Text      string `gorm:"type:text;not null"`
@@ -17,7 +13,6 @@ type MessageSchema struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
-
 func (MessageSchema) TableName() string {
 	return "messages"
 }
