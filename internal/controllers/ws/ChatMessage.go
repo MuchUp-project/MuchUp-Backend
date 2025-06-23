@@ -1,18 +1,26 @@
 package ws
+
 import (
 	"encoding/json"
 	"log"
 	"net/http"
+	
 	"sync"
+
 	"MuchUp/backend/internal/domain/entity"
 	"MuchUp/backend/internal/domain/usecase"
+	"MuchUp/backend/pkg/middleware"
+
+
 	"github.com/gorilla/websocket"
 )
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
+
 type Hub struct {
 	clients    map[*Client]bool
 	broadcast  chan []byte
@@ -20,6 +28,7 @@ type Hub struct {
 	unregister chan *Client
 	mutex      sync.RWMutex
 }
+
 type Client struct {
 	hub     *Hub
 	conn    *websocket.Conn
@@ -27,11 +36,13 @@ type Client struct {
 	userID  string
 	groupID string
 }
+
 type ChatHandler struct {
 	hub            *Hub
 	messageUsecase usecase.MessageUsecase
 	userUsecase    usecase.UserUsecase
 }
+
 type WebSocketMessage struct {
 	Type      string      `json:"type"`
 	Data      interface{} `json:"data"`
@@ -39,6 +50,7 @@ type WebSocketMessage struct {
 	GroupID   string      `json:"group_id,omitempty"`
 	Timestamp int64       `json:"timestamp,omitempty"`
 }
+
 type ChatMessage struct {
 	ID        string `json:"id"`
 	Content   string `json:"content"`
@@ -47,6 +59,7 @@ type ChatMessage struct {
 	Username  string `json:"username"`
 	Timestamp int64  `json:"timestamp"`
 }
+
 func NewChatHandler(messageUsecase usecase.MessageUsecase, userUsecase usecase.UserUsecase) *ChatHandler {
 	hub := &Hub{
 		clients:    make(map[*Client]bool),
@@ -54,6 +67,7 @@ func NewChatHandler(messageUsecase usecase.MessageUsecase, userUsecase usecase.U
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
+
 	handler := &ChatHandler{
 		hub:            hub,
 		messageUsecase: messageUsecase,
@@ -62,6 +76,7 @@ func NewChatHandler(messageUsecase usecase.MessageUsecase, userUsecase usecase.U
 	go hub.run()
 	return handler
 }
+
 func (h *Hub) run() {
 	for {
 		select {
@@ -110,6 +125,7 @@ func (h *Hub) run() {
 		}
 	}
 }
+
 func (h *Hub) broadcastToGroup(message []byte, groupID string) {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
@@ -124,18 +140,25 @@ func (h *Hub) broadcastToGroup(message []byte, groupID string) {
 		}
 	}
 }
+
 func (ch *ChatHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	userID := r.URL.Query().Get("user_id")
-	groupID := r.URL.Query().Get("group_id")
-	if userID == "" || groupID == "" {
-		http.Error(w, "user_id and group_id are required", http.StatusBadRequest)
-		return
-	}
+	
+
+	userID, ok := r.Context().Value(middleware.UserIDContextKey).(string)
+    if !ok || userID == "" {
+        http.Error(w, "user ID not found in context (middleware missing or invalid)", http.StatusInternalServerError)
+        return
+    }
+    groupID, ok := r.Context().Value(middleware.GroupIDContextKey).(string) 
+    if !ok {
+        groupID = "" 
+    }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
+
 	client := &Client{
 		hub:     ch.hub,
 		conn:    conn,
@@ -143,10 +166,12 @@ func (ch *ChatHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		userID:  userID,
 		groupID: groupID,
 	}
+
 	client.hub.register <- client
 	go client.writePump()
 	go client.readPump(ch)
 }
+
 func (c *Client) readPump(handler *ChatHandler) {
 	defer func() {
 		c.hub.unregister <- c
@@ -175,6 +200,7 @@ func (c *Client) readPump(handler *ChatHandler) {
 		}
 	}
 }
+
 func (c *Client) writePump() {
 	defer c.conn.Close()
 	for {
@@ -191,6 +217,7 @@ func (c *Client) writePump() {
 		}
 	}
 }
+
 func (ch *ChatHandler) handleChatMessage(client *Client, wsMessage WebSocketMessage) {
 	data, ok := wsMessage.Data.(map[string]interface{})
 	if !ok {
@@ -235,6 +262,7 @@ func (ch *ChatHandler) handleChatMessage(client *Client, wsMessage WebSocketMess
 		ch.hub.broadcastToGroup(responseData, client.groupID)
 	}
 }
+
 func (ch *ChatHandler) handleTyping(client *Client, wsMessage WebSocketMessage) {
 	response := WebSocketMessage{
 		Type:   "typing",
@@ -249,6 +277,7 @@ func (ch *ChatHandler) handleTyping(client *Client, wsMessage WebSocketMessage) 
 		ch.hub.broadcastToGroup(responseData, client.groupID)
 	}
 }
+
 func (ch *ChatHandler) handleJoinGroup(client *Client, wsMessage WebSocketMessage) {
 	data, ok := wsMessage.Data.(map[string]interface{})
 	if !ok {
