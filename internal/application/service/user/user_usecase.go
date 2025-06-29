@@ -3,15 +3,15 @@ import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"MuchUp/backend/internal/domain/entity"
-	"MuchUp/backend/internal/domain/repositories"
+	"MuchUp/backend/internal/domain/repository"
 	"MuchUp/backend/internal/domain/usecase"
 )
 type userUsecase struct {
-	userRepo  repositories.UserRepository
-	groupRepo repositories.ChatGroupRepository
+	userRepo  repository.UserRepository
+	groupRepo repository.ChatGroupRepository
 	groupUc   usecase.GroupUsecase
 }
-func NewUserUsecase(userRepo repositories.UserRepository, groupUc usecase.GroupUsecase) usecase.UserUsecase {
+func NewUserUsecase(userRepo repository.UserRepository, groupUc usecase.GroupUsecase) usecase.UserUsecase {
 	return &userUsecase{
 		userRepo: userRepo,
 		groupUc:  groupUc,
@@ -48,6 +48,7 @@ func (u *userUsecase) Login(email, password string) (string, error) {
 	return token, nil
 }
 func (u *userUsecase) UpdateUser(user *entity.User) (*entity.User, error) {
+
 	return nil, errors.New("not implemented")
 }
 func (u *userUsecase) DeleteUser(id string) error {

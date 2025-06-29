@@ -2,14 +2,14 @@ package server
 
 import (
 	"MuchUp/backend/config"
+	grpc_controller "MuchUp/backend/internal/controllers/gprc/v2"
 	"MuchUp/backend/pkg/logger"
+	pb "MuchUp/backend/proto/gen/go/v2"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
-	grpc_controller "MuchUp/backend/internal/controllers/gprc/v2"
-	pb "MuchUp/backend/proto/gen/go/v2"
 
+	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
 )
 
@@ -27,8 +27,8 @@ func StartGRPCServer(cfg *config.Config, appLogger logger.Logger, grpcHandler  *
 	}
 }
 
-func StartRestServer(cfg *config.Config,appLogger logger.Logger, router *http.ServeMux) {
-	httpPort := os.Getenv("SERVER_PORT")
+func StartHTTPServer(cfg *config.Config,appLogger logger.Logger, router *mux.Router) {
+	httpPort := cfg.HTTPPort
 	if httpPort == "" {
 		httpPort = "8080"
 	}

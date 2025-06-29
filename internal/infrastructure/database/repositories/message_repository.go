@@ -2,14 +2,14 @@ package repositories
 import (
 	"gorm.io/gorm"
 	"MuchUp/backend/internal/domain/entity"
-	"MuchUp/backend/internal/domain/repositories"
+	"MuchUp/backend/internal/domain/repository"
 	"MuchUp/backend/internal/infrastructure/database/mapper"
 	"MuchUp/backend/internal/infrastructure/database/schema"
 )
 type messageRepository struct {
 	db *gorm.DB
 }
-func NewMessageRepository(db *gorm.DB) repositories.MessageRepository {
+func NewMessageRepository(db *gorm.DB) repository.MessageRepository {
 	return &messageRepository{db: db}
 }
 func (r *messageRepository) CreateMessage(message *entity.Message) error {

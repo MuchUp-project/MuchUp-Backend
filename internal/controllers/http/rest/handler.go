@@ -1,13 +1,17 @@
 package rest
+
 import (
+	"MuchUp/backend/internal/domain/entity"
+	"MuchUp/backend/internal/domain/usecase"
+	"MuchUp/backend/pkg/auth"
+	"MuchUp/backend/pkg/logger"
+	"MuchUp/backend/pkg/middleware"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
+
 	"github.com/gorilla/mux"
-	"MuchUp/backend/internal/domain/entity"
-	"MuchUp/backend/internal/domain/usecase"
-	"MuchUp/backend/pkg/logger"
 )
 type Handler struct {
 	userUsecase    usecase.UserUsecase
@@ -23,7 +27,7 @@ type Response struct {
 type CreateUserRequest struct {
 	Name               string                 `json:"name" validate:"required,min=2,max=50"`
 	Email              string                 `json:"email" validate:"required,email"`
-	Password           string                 `json:"password" validate:"required,min=6"`
+	PasswordHash       string                 `json:"password" validate:"required,min=8"`
 	UsagePurpose       string                 `json:"usage_purpose"`
 	PersonalityProfile map[string]interface{} `json:"personality_profile"`
 }
@@ -50,27 +54,39 @@ func NewHandler(
 		logger:         logger,
 	}
 }
-func (h *Handler) SetupRoutes() *mux.Router {
+
+func (h *Handler) SetupRoutes(validator auth.TokenValidator) *mux.Router{
 	r := mux.NewRouter()
-	api := r.PathPrefix("/api/v1").Subrouter()
-	api.HandleFunc("/users", h.CreateUser).Methods("POST")
-	api.HandleFunc("/users/{id}", h.GetUser).Methods("GET")
-	api.HandleFunc("/users/{id}", h.UpdateUser).Methods("PUT")
-	api.HandleFunc("/users/{id}", h.DeleteUser).Methods("DELETE")
-	api.HandleFunc("/users", h.GetUsers).Methods("GET")
-	api.HandleFunc("/auth/login", h.Login).Methods("POST")
-	api.HandleFunc("/auth/logout", h.Logout).Methods("POST")
-	api.HandleFunc("/messages", h.CreateMessage).Methods("POST")
-	api.HandleFunc("/messages/{id}", h.GetMessage).Methods("GET")
-	api.HandleFunc("/messages/{id}", h.UpdateMessage).Methods("PUT")
-	api.HandleFunc("/messages/{id}", h.DeleteMessage).Methods("DELETE")
-	api.HandleFunc("/groups/{group_id}/messages", h.GetMessagesByGroup).Methods("GET")
-	api.HandleFunc("/groups/{group_id}/users", h.GetGroupUsers).Methods("GET")
-	api.HandleFunc("/groups/{group_id}/join", h.JoinGroup).Methods("POST")
-	api.HandleFunc("/groups/{group_id}/leave", h.LeaveGroup).Methods("POST")
-	r.HandleFunc("/health", h.HealthCheck).Methods("GET")
-	return r
+
+    api := r.PathPrefix("/api/v1").Subrouter()
+
+    
+    api.HandleFunc("/auth/login", h.Login).Methods("POST")
+    api.HandleFunc("/users", h.CreateUser).Methods("POST") 
+    api.HandleFunc("/health", h.HealthCheck).Methods("GET") 
+
+    api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.GetUser), validator)).Methods("GET")
+    api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.UpdateUser), validator)).Methods("PUT")
+    api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.DeleteUser), validator)).Methods("DELETE")
+    api.Handle("/users", middleware.JWTMiddleware(http.HandlerFunc(h.GetUsers), validator)).Methods("GET")
+
+    api.Handle("/auth/logout", middleware.JWTMiddleware(http.HandlerFunc(h.Logout), validator)).Methods("POST")
+    api.Handle("/messages", middleware.JWTMiddleware(http.HandlerFunc(h.CreateMessage), validator)).Methods("POST")
+    api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.GetMessage), validator)).Methods("GET")
+    api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.UpdateMessage), validator)).Methods("PUT")
+    api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.DeleteMessage), validator)).Methods("DELETE")
+
+    
+    api.Handle("/groups/{group_id}/messages", middleware.JWTMiddleware(http.HandlerFunc(h.GetMessagesByGroup), validator)).Methods("GET")
+    api.Handle("/groups/{group_id}/users", middleware.JWTMiddleware(http.HandlerFunc(h.GetGroupUsers), validator)).Methods("GET")
+    api.Handle("/groups/{group_id}/join", middleware.JWTMiddleware(http.HandlerFunc(h.JoinGroup), validator)).Methods("POST")
+    api.Handle("/groups/{group_id}/leave", middleware.JWTMiddleware(http.HandlerFunc(h.LeaveGroup), validator)).Methods("POST")
+
+    r.HandleFunc("/health", h.HealthCheck).Methods("GET")
+
+    return r
 }
+  
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -80,7 +96,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	user := &entity.User{
 		NickName:           req.Name,
 		Email:              &req.Email,
-		PasswordHash:       req.Password,
+		PasswordHash:       req.PasswordHash,
 		UsagePurpose:       req.UsagePurpose,
 		PersonalityProfile: req.PersonalityProfile,
 	}

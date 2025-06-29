@@ -1,15 +1,15 @@
 package group
 import (
 	"MuchUp/backend/internal/domain/entity"
-	"MuchUp/backend/internal/domain/repositories"
+	"MuchUp/backend/internal/domain/repository"
 	"MuchUp/backend/internal/domain/usecase"
 	"MuchUp/backend/pkg/logger"
 )
 type groupUsecase struct {
-	groupRepo repositories.ChatGroupRepository
+	groupRepo repository.ChatGroupRepository
 	logger    logger.Logger
 }
-func NewGroupUsecase(groupRepo repositories.ChatGroupRepository, logger logger.Logger) usecase.GroupUsecase {
+func NewGroupUsecase(groupRepo repository.ChatGroupRepository, logger logger.Logger) usecase.GroupUsecase {
 	return &groupUsecase{
 		groupRepo: groupRepo,
 		logger:    logger,

@@ -1,5 +1,8 @@
-package repositories
+package repository
 import "MuchUp/backend/internal/domain/entity"
+
+
+
 type UserRepository interface {
 	CreateUser(user *entity.User) error
 	GetUserByID(id string) (*entity.User, error)

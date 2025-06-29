@@ -3,7 +3,7 @@ import (
 	"errors"
 	"fmt"
 	"MuchUp/backend/internal/domain/entity"
-	"MuchUp/backend/internal/domain/repositories"
+	"MuchUp/backend/internal/domain/repository"
 	"MuchUp/backend/internal/domain/usecase"
 	"MuchUp/backend/internal/infrastructure/database/mapper"
 	"MuchUp/backend/internal/infrastructure/database/schema"
@@ -12,7 +12,7 @@ import (
 type chatGroupRepository struct {
 	db *gorm.DB
 }
-func NewChatGroupRepository(db *gorm.DB) repositories.ChatGroupRepository {
+func NewChatGroupRepository(db *gorm.DB) repository.ChatGroupRepository {
 	return &chatGroupRepository{db: db}
 }
 func (r *chatGroupRepository) CreateGroup(group *entity.ChatGroup) (*entity.ChatGroup, error) {

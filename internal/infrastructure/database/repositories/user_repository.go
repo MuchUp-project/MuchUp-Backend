@@ -1,14 +1,18 @@
 package repositories
+
 import (
 	"MuchUp/backend/internal/domain/entity"
-	"MuchUp/backend/internal/domain/repositories"
+	"MuchUp/backend/internal/domain/repository"
+	"MuchUp/backend/internal/infrastructure/database/mapper"
+
 	"gorm.io/gorm"
 )
 type userRepository struct {
 	db *gorm.DB
 }
 func (r *userRepository) CreateUser(user *entity.User) error {
-	err := r.db.Create(user).Error
+	userShema := mapper.ToUserSchema(user)
+	err := r.db.Create(userShema).Error
 	if err != nil {
 		return err
 	}
@@ -50,6 +54,6 @@ func (r *userRepository) GetUsers(limit, offset int) ([]*entity.User, error) {
 func (r *userRepository) GetUsersByGroup(groupID string) ([]*entity.User, error) {
 	return nil, nil
 }
-func NewUserRepository(db *gorm.DB) repositories.UserRepository {
+func NewUserRepository(db *gorm.DB) repository.UserRepository {
 	return &userRepository{db: db}
 }
