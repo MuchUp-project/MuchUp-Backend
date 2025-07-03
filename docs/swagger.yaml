@@ -1,0 +1,221 @@
+basePath: /api/v1
+definitions:
+  entity.Message:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      group_id:
+        type: string
+      image:
+        type: string
+      message_id:
+        type: string
+      sticker:
+        type: string
+      text:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      video:
+        type: string
+    type: object
+  entity.PrimaryAuthMethod:
+    enum:
+    - email
+    - phone
+    type: string
+    x-enum-varnames:
+    - AuthMethodEmail
+    - AuthMethodPhone
+  entity.User:
+    properties:
+      authMethod:
+        $ref: '#/definitions/entity.PrimaryAuthMethod'
+      avatarURL:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        format: date-time
+        type: string
+      email:
+        type: string
+      emailVerified:
+        type: boolean
+      id:
+        type: string
+      isActive:
+        type: boolean
+      isBlockedUsers:
+        additionalProperties:
+          type: boolean
+        type: object
+      nickName:
+        type: string
+      passwordHash:
+        type: string
+      personalityProfile:
+        additionalProperties: true
+        type: object
+      phoneNumber:
+        type: string
+      phoneVerified:
+        type: boolean
+      updatedAt:
+        type: string
+      usagePurpose:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is the MuchUp server
+  title: MuchUp API
+  version: "1.0"
+paths:
+  /message:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 認証トークン (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Message'
+        "401":
+          description: authorization error
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      tags:
+      - Message
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Creating User by request
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Creating User By entity
+      tags:
+      - User
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 認証トークン (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "401":
+          description: authorization error
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 認証トークン (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "401":
+          description: authorization error
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: UserIDからユーザーを取得
+      tags:
+      - User
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 認証トークン (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "401":
+          description: authorization error
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      tags:
+      - User
+swagger: "2.0"

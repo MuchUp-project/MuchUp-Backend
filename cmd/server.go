@@ -4,7 +4,7 @@ import (
 	group_service "MuchUp/backend/internal/application/service/group"
 	message_service "MuchUp/backend/internal/application/service/message"
 	user_service "MuchUp/backend/internal/application/service/user"
-	grpc_controller "MuchUp/backend/internal/controllers/gprc/v2"
+	grpc_controller "MuchUp/backend/internal/controllers/grpc/v2"
 	ws_controller "MuchUp/backend/internal/controllers/ws"
 	rest_controller "MuchUp/backend/internal/controllers/http/rest"
 	"MuchUp/backend/internal/infrastructure/database"
@@ -19,6 +19,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+
+// @Title MuchUp API
+// @version 1.0
+// @description This is the MuchUp server
+// @host localhost:8080
+// @Basepath /api/v1
 func main() {
 	config := config.LoadConfig()
 	appLogger := logger.NewLogger()

@@ -2,7 +2,7 @@ package server
 
 import (
 	"MuchUp/backend/config"
-	grpc_controller "MuchUp/backend/internal/controllers/gprc/v2"
+	grpc_controller "MuchUp/backend/internal/controllers/grpc/v2"
 	"MuchUp/backend/pkg/logger"
 	pb "MuchUp/backend/proto/gen/go/v2"
 	"fmt"

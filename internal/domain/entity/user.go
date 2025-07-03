@@ -25,7 +25,7 @@ type User struct {
 	IsBlockedUsers map[string]bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
+	DeletedAt gorm.DeletedAt `json:"deletedAt" swaggertype:"primitive,string" format:"date-time"`
 }
 func NewUser(userid,name string,authMethod PrimaryAuthMethod,email,phone string) (*User,error) {
 	if userid == "" || name == "" || authMethod == "" {

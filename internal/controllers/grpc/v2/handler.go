@@ -1,13 +1,15 @@
 package v2
+
 import (
+	"MuchUp/backend/internal/domain/usecase"
+	"MuchUp/backend/pkg/logger"
+	pb "MuchUp/backend/proto/gen/go/v2"
 	"context"
 	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"MuchUp/backend/internal/domain/usecase"
-	"MuchUp/backend/pkg/logger"
-	pb "MuchUp/backend/proto/gen/go/v2"
 )
+
 type GrpcHandler struct {
 	pb.UnimplementedUserServiceServer
 	pb.UnimplementedMessageServiceServer
@@ -15,6 +17,7 @@ type GrpcHandler struct {
 	messageUsecase usecase.MessageUsecase
 	logger         logger.Logger
 }
+
 func NewGrpcHandler(
 	userUsecase usecase.UserUsecase,
 	messageUsecase usecase.MessageUsecase,

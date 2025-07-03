@@ -86,7 +86,15 @@ func (h *Handler) SetupRoutes(validator auth.TokenValidator) *mux.Router{
 
     return r
 }
-  
+
+// @Summary Creating User By entity
+// @description Creating User by request
+// @Tags User
+// @Accept json
+// @Produce json 
+// @Success 200 {object} entity.User
+// @Failure 500 {object} string
+// @Router /users [post]
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -109,6 +117,17 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	createdUser.PasswordHash = ""
 	h.sendSuccessResponse(w, http.StatusCreated, createdUser, "User created successfully")
 }
+
+// @Summary UserIDからユーザーを取得
+// @Tags User
+// @Accept json 
+// @Produce json
+// @Param id path string true "User ID"
+// @Param       Authorization header string  true  "認証トークン (Bearer)"
+// @Success 200 {object} entity.User
+// @Failure 404 {object}  string
+// @Failure 401 {object} string "authorization error" 
+// @Router /users/{id} [get]
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID := vars["id"]
@@ -121,6 +140,16 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user.PasswordHash = ""
 	h.sendSuccessResponse(w, http.StatusOK, user, "")
 }
+
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param       Authorization header string  true  "認証トークン (Bearer)"
+// @Success 200 {object} entity.User
+// @Failure 404 {object}  string
+// @Failure 401 {object} string "authorization error" 
+// @Router /users/{id} [put]
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID := vars["id"]
@@ -149,6 +178,16 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	updatedUser.PasswordHash = ""
 	h.sendSuccessResponse(w, http.StatusOK, updatedUser, "User updated successfully")
 }
+
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param       Authorization header string  true  "認証トークン (Bearer)"
+// @Success 200 {object} entity.User
+// @Failure 404 {object}  string
+// @Failure 401 {object} string "authorization error" 
+// @Router /users/{id} [delete]
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID := vars["id"]
@@ -185,6 +224,15 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	h.sendSuccessResponse(w, http.StatusOK, users, "")
 }
+
+// @Summary emailとpasswordでログイン
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} string
+// @Failure 401 {object} string 
+// @Roter /auth/login" [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -206,6 +254,15 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	h.sendSuccessResponse(w, http.StatusOK, nil, "Logout successful")
 }
+
+// @Tags Message
+// @Accept json 
+// @Produce json
+// @Param   Authorization header string  true  "認証トークン (Bearer)"
+// @Success 200 {object} entity.Message
+// @Failure 404 {object}  string
+// @Failure 401 {object} string "authorization error" 
+// @Router /message [post]
 func (h *Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	var req CreateMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
