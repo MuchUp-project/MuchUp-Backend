@@ -27,6 +27,7 @@ func NewGrpcHandler(
 		userUsecase:    userUsecase,
 		messageUsecase: messageUsecase,
 		logger:         logger,
+	
 	}
 }
 func (h *GrpcHandler) handleError(ctx context.Context, operation string, err error) error {
@@ -48,3 +49,4 @@ func (h *GrpcHandler) handleError(ctx context.Context, operation string, err err
 func (h *GrpcHandler) HealthCheck(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
 	return &pb.User{Id: "health-ok"}, nil
 }
+
