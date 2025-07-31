@@ -10,7 +10,8 @@ type Config struct {
     DBName    string
     DBPort    string
     GRPCPort  string
-    HTTPPort  string
+    HTTPPort  string  
+    WSPort    string
 }
 
 func LoadConfig() *Config {
@@ -23,8 +24,10 @@ func LoadConfig() *Config {
         DBPort:    os.Getenv("DB_PORT"),
         GRPCPort:  getEnv("GRPC_PORT", "50051"),
         HTTPPort:  getEnv("SERVER_PORT", "8080"),
+        WSPort:    getEnv("WS_PORT","9000"),
     }
 }
+
 
 func getEnv(key, fallback string) string {
     val := os.Getenv(key)

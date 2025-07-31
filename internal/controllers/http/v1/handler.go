@@ -10,13 +10,14 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
+	"MuchUp/backend/internal/controllers/http/ws"
 	"github.com/gorilla/mux"
 )
 type Handler struct {
 	userUsecase    usecase.UserUsecase
 	messageUsecase usecase.MessageUsecase
 	logger         logger.Logger
+	hub   *ws.Hub
 }
 type Response struct {
 	Success bool        `json:"success"`
@@ -44,14 +45,26 @@ type UpdateUserRequest struct {
 	Email string `json:"email,omitempty" validate:"omitempty,email"`
 }
 func NewHandler(
+	
 	userUsecase usecase.UserUsecase,
 	messageUsecase usecase.MessageUsecase,
 	logger logger.Logger,
+	
 ) *Handler {
+	hub := &ws.Hub{
+		Clients:    make(map[*ws.Client]bool),
+		Broadcast:  make(chan []byte),
+		Register:   make(chan *ws.Client),
+		Unregister: make(chan *ws.Client),
+	}
+
+	go  hub.Run()
+
 	return &Handler{
 		userUsecase:    userUsecase,
 		messageUsecase: messageUsecase,
 		logger:         logger,
+		hub: hub,
 	}
 }
 
@@ -226,13 +239,14 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary emailとpasswordでログイン
-// @Tags Users
+// @Tags    Auth
 // @Accept json
 // @Produce json
+// @Param Login body LoginRequest true "ログインに必要なデータ"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} string
 // @Failure 401 {object} string 
-// @Roter /auth/login" [post]
+// @Router /auth/login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -251,6 +265,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	h.sendSuccessResponse(w, http.StatusOK, response, "Login successful")
 }
+
+
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	h.sendSuccessResponse(w, http.StatusOK, nil, "Logout successful")
 }

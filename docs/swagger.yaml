@@ -70,6 +70,16 @@ definitions:
       usagePurpose:
         type: string
     type: object
+  rest.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -77,6 +87,36 @@ info:
   title: MuchUp API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ログインに必要なデータ
+        in: body
+        name: Login
+        required: true
+        schema:
+          $ref: '#/definitions/rest.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: emailとpasswordでログイン
+      tags:
+      - Auth
   /message:
     post:
       consumes:
