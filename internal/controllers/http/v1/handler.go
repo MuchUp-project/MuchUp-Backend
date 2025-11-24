@@ -1,23 +1,31 @@
 package rest
 
 import (
+	"MuchUp/backend/internal/controllers/http/ws"
 	"MuchUp/backend/internal/domain/entity"
 	"MuchUp/backend/internal/domain/usecase"
 	"MuchUp/backend/pkg/auth"
 	"MuchUp/backend/pkg/logger"
 	"MuchUp/backend/pkg/middleware"
+	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
-	"MuchUp/backend/internal/controllers/http/ws"
+
 	"github.com/gorilla/mux"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
+
 type Handler struct {
 	userUsecase    usecase.UserUsecase
 	messageUsecase usecase.MessageUsecase
 	logger         logger.Logger
-	hub   *ws.Hub
+	hub            *ws.Hub
 }
 type Response struct {
 	Success bool        `json:"success"`
@@ -36,6 +44,15 @@ type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
+
+var googleOAuthConfig = &oauth2.Config{
+	ClientID:     os.Getenv("CLIENT_ID"),
+	ClientSecret: os.Getenv("CLIENT_SECRET"),
+	RedirectURL:  "https://localhost:8080/api/v1/auth/google/callback",
+	Scopes:       []string{"email", "openid"},
+	Endpoint:     google.Endpoint,
+}
+
 type CreateMessageRequest struct {
 	Content string `json:"content" validate:"required,min=1,max=1000"`
 	GroupID string `json:"group_id" validate:"required"`
@@ -44,12 +61,13 @@ type UpdateUserRequest struct {
 	Name  string `json:"name,omitempty" validate:"omitempty,min=2,max=50"`
 	Email string `json:"email,omitempty" validate:"omitempty,email"`
 }
+
 func NewHandler(
-	
+
 	userUsecase usecase.UserUsecase,
 	messageUsecase usecase.MessageUsecase,
 	logger logger.Logger,
-	
+
 ) *Handler {
 	hub := &ws.Hub{
 		Clients:    make(map[*ws.Client]bool),
@@ -58,53 +76,53 @@ func NewHandler(
 		Unregister: make(chan *ws.Client),
 	}
 
-	go  hub.Run()
+	go hub.Run()
 
 	return &Handler{
 		userUsecase:    userUsecase,
 		messageUsecase: messageUsecase,
 		logger:         logger,
-		hub: hub,
+		hub:            hub,
 	}
 }
 
-func (h *Handler) SetupRoutes(validator auth.TokenValidator) *mux.Router{
+func (h *Handler) SetupRoutes(validator auth.TokenValidator) *mux.Router {
 	r := mux.NewRouter()
 
-    api := r.PathPrefix("/api/v1").Subrouter()
+	api := r.PathPrefix("/api/v1").Subrouter()
 
-    
-    api.HandleFunc("/auth/login", h.Login).Methods("POST")
-    api.HandleFunc("/users", h.CreateUser).Methods("POST") 
-    api.HandleFunc("/health", h.HealthCheck).Methods("GET") 
+	api.HandleFunc("/auth/email/login", h.Login).Methods("POST")
+	api.HandleFunc("/signup", h.CreateUser).Methods("POST")
+	api.HandleFunc("/auth/google/login", h.HandleGoogleLogin).Methods("POST")
+	api.HandleFunc("/auth/google/callback", h.HandleGoogleCallback).Methods("GET") //")
+	api.HandleFunc("/health", h.HealthCheck).Methods("GET")
 
-    api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.GetUser), validator)).Methods("GET")
-    api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.UpdateUser), validator)).Methods("PUT")
-    api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.DeleteUser), validator)).Methods("DELETE")
-    api.Handle("/users", middleware.JWTMiddleware(http.HandlerFunc(h.GetUsers), validator)).Methods("GET")
+	api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.GetUser), validator)).Methods("GET")
+	api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.UpdateUser), validator)).Methods("PUT")
+	api.Handle("/users/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.DeleteUser), validator)).Methods("DELETE")
+	api.Handle("/users", middleware.JWTMiddleware(http.HandlerFunc(h.GetUsers), validator)).Methods("GET")
 
-    api.Handle("/auth/logout", middleware.JWTMiddleware(http.HandlerFunc(h.Logout), validator)).Methods("POST")
-    api.Handle("/messages", middleware.JWTMiddleware(http.HandlerFunc(h.CreateMessage), validator)).Methods("POST")
-    api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.GetMessage), validator)).Methods("GET")
-    api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.UpdateMessage), validator)).Methods("PUT")
-    api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.DeleteMessage), validator)).Methods("DELETE")
+	api.Handle("/auth/logout", middleware.JWTMiddleware(http.HandlerFunc(h.Logout), validator)).Methods("POST")
+	api.Handle("/messages", middleware.JWTMiddleware(http.HandlerFunc(h.CreateMessage), validator)).Methods("POST")
+	api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.GetMessage), validator)).Methods("GET")
+	api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.UpdateMessage), validator)).Methods("PUT")
+	api.Handle("/messages/{id}", middleware.JWTMiddleware(http.HandlerFunc(h.DeleteMessage), validator)).Methods("DELETE")
 
-    
-    api.Handle("/groups/{group_id}/messages", middleware.JWTMiddleware(http.HandlerFunc(h.GetMessagesByGroup), validator)).Methods("GET")
-    api.Handle("/groups/{group_id}/users", middleware.JWTMiddleware(http.HandlerFunc(h.GetGroupUsers), validator)).Methods("GET")
-    api.Handle("/groups/{group_id}/join", middleware.JWTMiddleware(http.HandlerFunc(h.JoinGroup), validator)).Methods("POST")
-    api.Handle("/groups/{group_id}/leave", middleware.JWTMiddleware(http.HandlerFunc(h.LeaveGroup), validator)).Methods("POST")
+	api.Handle("/groups/{group_id}/messages", middleware.JWTMiddleware(http.HandlerFunc(h.GetMessagesByGroup), validator)).Methods("GET")
+	api.Handle("/groups/{group_id}/users", middleware.JWTMiddleware(http.HandlerFunc(h.GetGroupUsers), validator)).Methods("GET")
+	api.Handle("/groups/{group_id}/join", middleware.JWTMiddleware(http.HandlerFunc(h.JoinGroup), validator)).Methods("POST")
+	api.Handle("/groups/{group_id}/leave", middleware.JWTMiddleware(http.HandlerFunc(h.LeaveGroup), validator)).Methods("POST")
 
-    r.HandleFunc("/health", h.HealthCheck).Methods("GET")
+	r.HandleFunc("/health", h.HealthCheck).Methods("GET")
 
-    return r
+	return r
 }
 
 // @Summary Creating User By entity
 // @description Creating User by request
 // @Tags User
 // @Accept json
-// @Produce json 
+// @Produce json
 // @Success 200 {object} entity.User
 // @Failure 500 {object} string
 // @Router /users [post]
@@ -131,15 +149,49 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	h.sendSuccessResponse(w, http.StatusCreated, createdUser, "User created successfully")
 }
 
+func (h *Handler) HandleGoogleLogin(w http.ResponseWriter, r *http.Request) {
+	url := googleOAuthConfig.AuthCodeURL("state-token")
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func (h *Handler) HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("codes")
+          token,err := googleOAuthConfig.Exchange(context.Background(),code)
+	if err != nil {
+	http.Error(w,"token exchange failed in GoogleOAuth",http.StatusInternalServerError)
+		return
+	}
+	idToken := token.Extra("it_token").(string)
+	claim := struct {
+	  Sub string `json:"sub"`
+	  Email string  `json:"email"`
+	  Name *string `json:"name"`
+	  ProfilePicture map[string]interface{} `json:"profile_picture"`
+	}{}
+	parts := strings.Split(idToken,".")
+	payload,err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+	http.Error(w,"token decode to paiyload failed payload",http.StatusInternalServerError)
+		return 
+	}
+	_ = json.Unmarshal(payload,&claim)
+	user,err := h.userUsecase.GetUserByEmail(claim.Email)
+	if err != nil {
+	http.Error(w,"token decode to paiyload failed payload",http.StatusInternalServerError)
+		return 
+	}
+}
+
+// kaito
 // @Summary UserIDからユーザーを取得
-// @Tags User
-// @Accept json 
+// @Tags Userkakoa kaito
+// @Accept json
 // @Produce json
-// @Param id path string true "User ID"
+// @Param id path string true "Usefdfzr ID"
 // @Param       Authorization header string  true  "認証トークン (Bearer)"
 // @Success 200 {object} entity.User
 // @Failure 404 {object}  string
-// @Failure 401 {object} string "authorization error" 
+// @Failure 401 {object} string "authorization error"
 // @Router /users/{id} [get]
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -161,7 +213,7 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Param       Authorization header string  true  "認証トークン (Bearer)"
 // @Success 200 {object} entity.User
 // @Failure 404 {object}  string
-// @Failure 401 {object} string "authorization error" 
+// @Failure 401 {object} string "authorization error"
 // @Router /users/{id} [put]
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -199,7 +251,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Param       Authorization header string  true  "認証トークン (Bearer)"
 // @Success 200 {object} entity.User
 // @Failure 404 {object}  string
-// @Failure 401 {object} string "authorization error" 
+// @Failure 401 {object} string "authorization error"
 // @Router /users/{id} [delete]
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -245,7 +297,7 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 // @Param Login body LoginRequest true "ログインに必要なデータ"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} string
-// @Failure 401 {object} string 
+// @Failure 401 {object} string
 // @Router /auth/login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
@@ -266,18 +318,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	h.sendSuccessResponse(w, http.StatusOK, response, "Login successful")
 }
 
-
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	h.sendSuccessResponse(w, http.StatusOK, nil, "Logout successful")
 }
 
 // @Tags Message
-// @Accept json 
+// @Accept json
 // @Produce json
 // @Param   Authorization header string  true  "認証トークン (Bearer)"
 // @Success 200 {object} entity.Message
 // @Failure 404 {object}  string
-// @Failure 401 {object} string "authorization error" 
+// @Failure 401 {object} string "authorization error"
 // @Router /message [post]
 func (h *Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	var req CreateMessageRequest

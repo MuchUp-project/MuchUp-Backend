@@ -7,6 +7,7 @@ import (
 
 type UserUsecase interface {
 	GetUserByID(id string) (*entity.User, error)
+	GetUserByEmail(email string) (*entity.User, error)
 	CreateUser(user *entity.User) (*entity.User,error)
 	UpdateUser(user *entity.User) (*entity.User, error)
 	DeleteUser(id string) error

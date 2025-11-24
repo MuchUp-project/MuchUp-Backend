@@ -194,83 +194,78 @@ func (c *Client) WritePump() {
 	defer func() {
 		c.Conn.Close()
 	}()
-	for  {
-		select {
-		case message, ok := <-c.Send:
-			if !ok {
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				log.Printf("WebSocket write error: %v", err)
-				return
-			}
+	for message := range c.Send {
+		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			log.Printf("WebSocket write error: %v", err)
+			return
+		}
+	}
+	// Send close message when channel is closed
+	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+}
+
+func (ch *ChatHandler) HandleChatMessage(client *Client, wsMessage WebSocketMessage) {
+	data, ok := wsMessage.Data.(map[string]interface{})
+	if !ok {
+		return
+	}
+	content, _ := data["content"].(string)
+	recipientId, _ := data["recipientId"].(string)
+	groupId, _ := data["groupId"].(string)
+	messageType := wsMessage.Type
+	message, err := entity.NewMessage(client.UserID, groupId, content)
+	if err != nil {
+		log.Printf("Failed to create message entity: %v", err)
+		return
+	}
+	savedMessage, err := ch.MessageUsecase.CreateMessage(message)
+	if err != nil {
+		log.Printf("Failed to save message: %v", err)
+		return
+	}
+	user, err := ch.UserUsecase.GetUserByID(client.UserID)
+	if err != nil {
+		log.Printf("Failed to get user: %v", err)
+		return
+	}
+	var text string
+	if savedMessage.Text != nil {
+		text = *savedMessage.Text
+	}
+	chatMessage := ChatMessage{
+		ID:        savedMessage.MessageID,
+		Content:   text,
+		UserID:    savedMessage.SenderID,
+		GroupID:   savedMessage.GroupID,
+		Username:  user.NickName,
+		Timestamp: savedMessage.CreatedAt.Unix(),
+	}
+	response := WebSocketMessage{
+		Type: "new_message",
+		Data: chatMessage,
+	}
+	if responseData, err := json.Marshal(response); err == nil {
+		if messageType == "direct" && recipientId != "" {
+			ch.Hub.SendToUser(responseData, recipientId)
+		} else if messageType == "group" && groupId != "" {
+			ch.Hub.BroadcastToGroup(responseData, groupId)
 		}
 	}
 }
 
-func (ch *ChatHandler) HandleChatMessage(client *Client, wsMessage WebSocketMessage) {
-	   data, ok := wsMessage.Data.(map[string]interface{})
-	   if !ok {
-			   return
-	   }
-	   content, _ := data["content"].(string)
-	   recipientId, _ := data["recipientId"].(string)
-	   groupId, _ := data["groupId"].(string)
-	   messageType := wsMessage.Type
-	   message, err := entity.NewMessage(client.UserID, groupId, content)
-	   if err != nil {
-			   log.Printf("Failed to create message entity: %v", err)
-			   return
-	   }
-	   savedMessage, err := ch.MessageUsecase.CreateMessage(message)
-	   if err != nil {
-			   log.Printf("Failed to save message: %v", err)
-			   return
-	   }
-	   user, err := ch.UserUsecase.GetUserByID(client.UserID)
-	   if err != nil {
-			   log.Printf("Failed to get user: %v", err)
-			   return
-	   }
-	   var text string
-	   if savedMessage.Text != nil {
-			   text = *savedMessage.Text
-	   }
-	   chatMessage := ChatMessage{
-			   ID:        savedMessage.MessageID,
-			   Content:   text,
-			   UserID:    savedMessage.SenderID,
-			   GroupID:   savedMessage.GroupID,
-			   Username:  user.NickName,
-			   Timestamp: savedMessage.CreatedAt.Unix(),
-	   }
-	   response := WebSocketMessage{
-			   Type: "new_message",
-			   Data: chatMessage,
-	   }
-	   if responseData, err := json.Marshal(response); err == nil {
-			   if messageType == "direct" && recipientId != "" {
-					   ch.Hub.SendToUser(responseData, recipientId)
-			   } else if messageType == "group" && groupId != "" {
-					   ch.Hub.BroadcastToGroup(responseData, groupId)
-			   }
-	   }
-// SendToUser sends a message to a specific user by userID
 func (h *Hub) SendToUser(message []byte, userID string) {
-	   h.Mutex.RLock()
-	   defer h.Mutex.RUnlock()
-	   for client := range h.Clients {
-			   if client.UserID == userID {
-					   select {
-					   case client.Send <- message:
-					   default:
-							   close(client.Send)
-							   delete(h.Clients, client)
-					   }
-			   }
-	   }
-}
+	h.Mutex.RLock()
+	defer h.Mutex.RUnlock()
+	for client := range h.Clients {
+		if client.UserID == userID {
+			select {
+			case client.Send <- message:
+			default:
+				close(client.Send)
+				delete(h.Clients, client)
+			}
+		}
+	}
 }
 
 func (ch *ChatHandler) HandleTyping(client *Client, wsMessage WebSocketMessage) {
@@ -289,6 +284,7 @@ func (ch *ChatHandler) HandleTyping(client *Client, wsMessage WebSocketMessage) 
 }
 
 func (ch *ChatHandler) HandleJoinGroup(client *Client, wsMessage WebSocketMessage) {
+
 	data, ok := wsMessage.Data.(map[string]interface{})
 	if !ok {
 		return
@@ -320,4 +316,23 @@ func (ch *ChatHandler) HandleJoinGroup(client *Client, wsMessage WebSocketMessag
 	if data, err := json.Marshal(joinMessage); err == nil {
 		ch.Hub.BroadcastToGroup(data, client.GroupID)
 	}
+
+	// 新規グループ作成時にAIエージェントの自己紹介メッセージを送信
+	if client.UserID != "ai_agent" && newGroupID != "" {
+		aiMessage := WebSocketMessage{
+			Type: "new_message",
+			Data: map[string]interface{}{
+				"id":        "ai_intro",
+				"content":   "こんにちは!私はこのグループをサポートするAIです。皆さんが仲良くなれるようにお手伝いします。何か質問があれば気軽に話しかけてくださいね!",
+				"user_id":   "ai_agent",
+				"group_id":  newGroupID,
+				"username":  "AIエージェント",
+				"timestamp": 0,
+			},
+		}
+		if data, err := json.Marshal(aiMessage); err == nil {
+			ch.Hub.BroadcastToGroup(data, newGroupID)
+		}
+	}
+
 }

@@ -22,9 +22,8 @@ func LoadConfig() *Config {
         DBPass:    os.Getenv("DB_PASSWORD"),
         DBName:    os.Getenv("DB_NAME"),
         DBPort:    os.Getenv("DB_PORT"),
-        GRPCPort:  getEnv("GRPC_PORT", "50051"),
+        GRPCPort:  getEnv("GRPC_PORT", "9000"),
         HTTPPort:  getEnv("SERVER_PORT", "8080"),
-        WSPort:    getEnv("WS_PORT","9000"),
     }
 }
 
