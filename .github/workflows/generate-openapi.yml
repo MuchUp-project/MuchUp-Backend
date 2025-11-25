@@ -8,19 +8,19 @@ jobs:
   build-and-upload:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - use: actions/checkout@v4
       - names: setup go
-        uses: actions/go-setup@v4
+        use: actions/go-setup@v4
         with:
           go version: "1.2.1"
       - names: install swag
         run: |
           go install github.com/swaggo/swag/cmd/swag@latest
           echo "$GOPATH/bin" >> "$GITHUB_PATH"
-      - names: generate openapi by swagger
+      - name: generate openapi by swagger
         run: |
           swag init -g ./cmd/main.go -o ./docs
-      - names: openapi.yml upload to S3
+      - name: openapi.yml upload to S3
         uses: jakejarvis/s3-sync-action@v0.6.0
         with:
           args: --acl public-read --delete
