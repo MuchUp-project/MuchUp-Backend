@@ -182,7 +182,6 @@ func (h *Handler) HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// kaito
 // @Summary UserIDからユーザーを取得
 // @Tags Userkakoa kaito
 // @Accept json
