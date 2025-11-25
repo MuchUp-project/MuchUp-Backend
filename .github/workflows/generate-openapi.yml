@@ -20,7 +20,7 @@ jobs:
       - names: generate openapi by swagger
         run: |
           swag init -g ./cmd/main.go -o ./docs
-      - namses: openapi.yml upload to S3
+      - names: openapi.yml upload to S3
         uses: jakejarvis/s3-sync-action@v0.6.0
         with:
           args: --acl public-read --delete

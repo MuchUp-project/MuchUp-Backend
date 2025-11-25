@@ -1,10 +1,12 @@
 package user
+
 import (
-	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"MuchUp/backend/internal/domain/entity"
 	"MuchUp/backend/internal/domain/repository"
 	"MuchUp/backend/internal/domain/usecase"
+	"errors"
+
+	"golang.org/x/crypto/bcrypt"
 )
 type userUsecase struct {
 	userRepo  repository.UserRepository
@@ -34,6 +36,9 @@ func (u *userUsecase) CreateUser(user *entity.User) (*entity.User, error) {
 }
 func (u *userUsecase) GetUserByID(id string) (*entity.User, error) {
 	return u.userRepo.GetUserByID(id)
+}
+func (u *userUsecase) GetUserByEmail(email string) (*entity.User,error) {
+	return u.userRepo.GetUserByEmail(email)
 }
 func (u *userUsecase) Login(email, password string) (string, error) {
 	user, err := u.userRepo.GetUserByEmail(email)
